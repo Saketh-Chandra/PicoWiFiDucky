@@ -1,4 +1,4 @@
-CIRCUITPY_WIFI_SSID = "SandboxWifi"
-CIRCUITPY_WEB_API_PASSWORD = "WifiPassword"
+WIFI_SSID = "SandboxWifi"
+WIFI_PASSWORD = "WifiPassword"
 PORT = 80
 HOSTNAME = "picowifiducky"

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name="apple-mobile-web-app-status-bar" content="#000000">
+    <meta name="theme-color" content="#000000">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>My Pico W</title>
+    <!-- CSS could also be loaded from local storage or be embedded. --->
+    <link rel='stylesheet' type="text/css" href='/static/css/dark.min.css'>
+
+
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+
+</head>
+
+<body>
+    <h1>Web-Based Rubber Ducky</h1>
+    <p>Welcome to the web-based rubber ducky. This tool allows you to execute payloads on a target device via Wi-Fi.</p>
+    <button type="button" onclick="togglePayloadForm()">Enter Payload</button>
+    <button type="button" onclick="togglePayloadUploadForm()">Upload Payload</button>
+    <button type="button" onclick="togglepayloadTable()">Saved Payload</button>
+    <div id="message"></div>
+    <div id="payloadForm" style="display:none;">
+        <form>
+            <label for="payload">Enter Payload:</label>
+            <br>
+            <textarea id="payload" name="payload" rows="10" cols="50" placeholder="Enter payload here"></textarea>
+            <br>
+            <button type="button" onclick="executeTextareaPayload()">Execute</button>
+            <button type="button" onclick="storePayload('text')">Save</button>
+        </form>
+    </div>
+    <div id="payloadUploadForm" style="display:none;">
+        <h2>upload a payload file:</h2>
+        <form enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="button" onclick="uploadPayload('file')">Execute</button>
+            <button type="button" onclick="uploadPayload('file_store')">Save</button>
+        </form>
+    </div>
+    <div id="payloadTable" style="display:none;">
+        <h2>Stored Payloads:</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Payload</th>
+                    <th>Run</th>
+                </tr>
+            </thead>
+            <tbody id="payloadTableBody"></tbody>
+        </table>
+    </div>
+    <script>
+        // Add your JavaScript code here
+        function togglePayloadForm() {
+            // Toggle the display of the payload form
+            var form = document.getElementById("payloadForm");
+            if (form.style.display === "none") {
+                form.style.display = "block";
+            } else {
+                form.style.display = "none";
+            }
+        }
+        function togglePayloadUploadForm() {
+            // Toggle the display of the payload form
+            var form = document.getElementById("payloadUploadForm");
+            if (form.style.display === "none") {
+                form.style.display = "block";
+            } else {
+                form.style.display = "none";
+            }
+        }
+
+        function togglepayloadTable() {
+            // Toggle the display of the payload form
+            var payloadTable = document.getElementById("payloadTable");
+            if (payloadTable.style.display === "none") {
+                payloadTable.style.display = "block";
+                payloadTableBody()
+            } else {
+                payloadTable.style.display = "none";
+
+            }
+        }
+
+        function storePayload(data) {
+            // Get the payload from the textarea
+            if (data == 'text') {
+                var payload = document.getElementById("payload").value;
+            } else {
+                var payload = data
+            }
+            // Get the current list of stored payloads from localStorage
+            var storedPayloads = JSON.parse(localStorage.getItem("payloads")) || [];
+
+            // Add the new payload to the list
+            storedPayloads.push(payload);
+            var id = Date.now();
+            // Save the updated list of payloads in localStorage
+            localStorage.setItem(`${id}`, JSON.stringify(storedPayloads));
+
+            // Display a confirmation message to the user
+            var messageElement = document.getElementById("message");
+            messageElement.innerHTML = "<p>Payload saved.</p>";
+        }
+
+
+
+        function executePayload(payload) {
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/run");
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    var messageElement = document.getElementById("message");
+                    messageElement.innerHTML = `<p>${response.message}</p>`;
+                    // document.body.appendChild(messageElement);
+                } else {
+                    var errorElement = document.getElementById("message");
+                    errorElement.style.color = "red";
+                    errorElement.innerHTML = `<p>Error: ${response.message}, ${xhr.status}</p>`;
+                    // document.body.appendChild(errorElement);
+                }
+            };
+            xhr.send(JSON.stringify({ payload: payload }));
+            // Display the result to the user
+
+        }
+
+        function executeTextareaPayload() {
+            var payload = document.getElementById("payload").value;
+            executePayload(payload)
+        }
+
+        function uploadPayload(type) {
+            var file = document.getElementsByName("file")[0].files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var payload = reader.result;
+                if (type == 'file') {
+                    executePayload(payload)
+                } else if (type == 'file_store') {
+                    storePayload(payload)
+                }
+
+            }
+            reader.readAsText(file);
+        }
+
+        function payloadTableBody() {
+            var tableBody = document.getElementById("payloadTableBody");
+            tableBody.innerHTML = ""; // Clear the table body first
+
+            // Loop through each key in local storage
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+
+                // Check if the key corresponds to a payload item
+                if (/^\d+$/.test(key)) {
+                    var payload = JSON.parse(localStorage.getItem(key));
+
+                    // Create a new row in the table
+                    var row = document.createElement("tr");
+
+                    var pre = document.createElement("pre");
+                    pre.id = key
+                    pre.textContent = payload[0];
+
+                    // Add the Payload column
+                    var payloadCell = document.createElement("td");
+                    payloadCell.appendChild(pre);
+
+                    row.appendChild(payloadCell);
+
+                    var run = document.createElement("button")
+                    run.type = "button"
+                    run.textContent = '↻'
+
+                    // onclick execute Payload
+                    run.addEventListener("click", executePayload.bind(null, payload[0]));
+
+                    // Add the run button column
+                    var runCell = document.createElement("td");
+
+                    runCell.appendChild(run);
+                    row.appendChild(runCell)
+
+                    // Add the row to the table body
+                    tableBody.appendChild(row);
+                }
+            }
+        }
+    </script>
+    <script src="/js/app.js"></script>
+    <footer> <a href="#">Back to top ⬆</a> </footer>
+</body>
+
+</html>

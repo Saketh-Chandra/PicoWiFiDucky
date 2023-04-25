@@ -1,4 +1,5 @@
 temp
 lib/*
+.vscode
 
 !lib/.gitkeep

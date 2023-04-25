@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>My Pico W</title>
+    <!-- CSS could also be loaded from local storage or be embedded. --->
+    <link rel='stylesheet' type="text/css" href='/static/css/dark.min.css'>
+
+    <meta name="referrer" content="no-referrer"/>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <base href="http://picowifiducky" target="_blank">
+</head>
+
+<body>
+    <h1>My Pico W Web Server</h1>
+    <p>Details about My RPi Pico W board.</p>
+    <div id="details"></div>
+    <p style='text-align:center;'>Saketh</p>
+    <script>
+        window.addEventListener('load', () => {
+            {
+
+                fetch('/api/data')
+                    .then(res => res.json())
+                    .then(data => {
+                        {
+                            var table = document.createElement('table'), row, cell1, cell2;
+                            table.setAttribute("id", "details_table");
+                            document.getElementById('details').appendChild(table);
+                            for (let key in data) {
+                                {
+                                    row = table.insertRow();
+                                    cell1 = row.insertCell();
+                                    cell2 = row.insertCell();
+                                    cell2.id = key;
+                                    cell1.innerHTML = key;
+                                    cell2.innerHTML = data[key];
+                                }
+                            }
+                        }
+                    })
+                    .catch(rejected => {
+                        {
+                            console.log("Server down or can not fetch cpu info!");
+                            clearInterval(interval_CPU);
+                        }
+                    });
+
+
+            }
+        });
+
+        let interval_CPU = setInterval(() => {
+            {
+                fetch('/api/cpu/temperature')
+                    .then(res => res.json())
+                    .then(data => {
+                        {
+                            document.getElementById('Temperature').innerText = data['Temperature'];
+                        }
+                    })
+                    .catch(rejected => {
+                        {
+                            console.log("Server down or can not fetch cpu info!");
+                            clearInterval(interval_CPU);
+                        }
+                    });
+
+
+            }
+        }, 10 * 1000);
+    </script>
+</body>
+
+</html>
