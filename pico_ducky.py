@@ -53,6 +53,7 @@ class PicoDucky:
         }
         self.led = digitalio.DigitalInOut(board.LED)
         self.led.direction = digitalio.Direction.OUTPUT
+        self.led.value = False
 
     def convertLine(self, line):
         newline = []
@@ -70,7 +71,6 @@ class PicoDucky:
             else:
                 # if it's not a known key name, show the error for diagnosis
                 print(f"Unknown key: <{key}>")
-        print(newline)
         return newline
 
     def runScriptLine(self, line):

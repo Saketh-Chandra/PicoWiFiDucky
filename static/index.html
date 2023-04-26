@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <h1>Web-Based Rubber Ducky</h1>
+    <h1>PicoWiFiDucky</h1>
     <p>Welcome to the web-based rubber ducky. This tool allows you to execute payloads on a target device via Wi-Fi.</p>
     <button type="button" onclick="togglePayloadForm()">Enter Payload</button>
     <button type="button" onclick="togglePayloadUploadForm()">Upload Payload</button>
@@ -49,7 +49,7 @@
             <thead>
                 <tr>
                     <th>Payload</th>
-                    <th>Run</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="payloadTableBody"></tbody>
@@ -170,27 +170,80 @@
                     var row = document.createElement("tr");
 
                     var pre = document.createElement("pre");
-                    pre.id = key
+                    pre.id = key;
                     pre.textContent = payload[0];
 
                     // Add the Payload column
                     var payloadCell = document.createElement("td");
                     payloadCell.appendChild(pre);
 
+                    // Add the run, edit, save, and copy buttons to the same cell
+                    var buttonCell = document.createElement("td");
+
+                    var runButton = document.createElement("button");
+                    runButton.type = "button";
+                    runButton.title = "re-execute"
+                    runButton.innerHTML = "🔄";
+                    //runButton.addEventListener("click", executePayload.bind(null, payload[0]));
+                    runButton.addEventListener("click", function (event) {
+                        var clickedButton = event.target;
+                        var pre = clickedButton.parentNode.previousSibling.firstChild;
+                        executePayload(pre.textContent)
+                    }); 
+
+                    var editButton = document.createElement("button");
+                    editButton.type = "button";
+                    editButton.title = "edit"
+                    editButton.innerHTML = "✏";
+                    editButton.addEventListener("click", function (event) {
+                        var clickedButton = event.target;
+                        var pre = clickedButton.parentNode.previousSibling.firstChild;
+                        pre.contentEditable = true;
+                        pre.focus();
+                    });
+
+                    var saveButton = document.createElement("button");
+                    saveButton.type = "button";
+                    saveButton.title = "save"
+                    saveButton.innerHTML = "💾";
+                    saveButton.addEventListener("click", function (event) {
+                        var clickedButton = event.target;
+                        var pre = clickedButton.parentNode.previousSibling.firstChild;
+                        key = pre.id
+                        pre.contentEditable = false;
+                        payload[0] = pre.textContent;
+
+                        localStorage.setItem(key, JSON.stringify(payload));
+                    });
+
+                    var copyButton = document.createElement("button");
+                    copyButton.type = "button";
+                    copyButton.title = "copy"
+                    copyButton.innerHTML = "📄";
+                    copyButton.addEventListener("click", function () {
+                        navigator.clipboard.writeText(payload[0]);
+                    });
+
+                    var deleteButton = document.createElement("button");
+                    deleteButton.type = "button";
+                    deleteButton.title = "delete"
+                    deleteButton.innerHTML = "&#x1F5D1;"; // Unicode symbol for delete icon
+                    deleteButton.addEventListener("click", function (event) {
+                        var clickedButton = event.target;
+                        var row = clickedButton.parentNode.parentNode;
+                        var pre = row.firstElementChild.firstChild;
+                        pre.style.textDecoration = "line-through";
+                        localStorage.removeItem(pre.id);
+                    });
+
+                    buttonCell.appendChild(runButton);
+                    buttonCell.appendChild(editButton);
+                    buttonCell.appendChild(saveButton);
+                    buttonCell.appendChild(copyButton);
+                    buttonCell.appendChild(deleteButton);
+
                     row.appendChild(payloadCell);
-
-                    var run = document.createElement("button")
-                    run.type = "button"
-                    run.textContent = '↻'
-
-                    // onclick execute Payload
-                    run.addEventListener("click", executePayload.bind(null, payload[0]));
-
-                    // Add the run button column
-                    var runCell = document.createElement("td");
-
-                    runCell.appendChild(run);
-                    row.appendChild(runCell)
+                    row.appendChild(buttonCell);
 
                     // Add the row to the table body
                     tableBody.appendChild(row);

@@ -4,6 +4,8 @@ import json
 import os
 from microcontroller import cpu
 import mdns
+import traceback
+
 
 
 from adafruit_httpserver.server import HTTPServer
@@ -31,9 +33,9 @@ print("Connected to", ssid)
 mdns_server = mdns.Server(wifi.radio)
 mdns_server.hostname = hostname
 mdns_server.advertise_service(service_type="_http", protocol="_tcp", port=port)
-print(f"Listening on http://{mdns_server.hostname}:{port}")
+print(f"MDNS : Listening on http://{mdns_server.hostname}:{port}")
 
-print(f"Listening on http://{wifi.radio.hostname}:{port}")
+print(f"Hostname : Listening on http://{wifi.radio.hostname}:{port}")
 
 pool = socketpool.SocketPool(wifi.radio)
 server = HTTPServer(pool,root_path='/static')
@@ -85,43 +87,30 @@ def css_file_gz(request):
     with HTTPResponse(request, content_type=MIMEType.TYPE_CSS ,headers=headers) as response:
         response.send_file("/static/css/dark.min.css")
 
-# @server.route("/static/manifest.json")
-# def static_manifest(request):
-#     with HTTPResponse(request, content_type=MIMEType.TYPE_JSON) as response:
-#         response.send_file("manifest.json")    
-
-
-# @server.route("/static/js/<file>")
-# def static_js(request,file):
-#     print(file)
-#     with HTTPResponse(request, content_type=MIMEType.TYPE_JS) as response:
-#         response.send_file(f"/static/js/{file}") 
-
-# @server.route("/static/images/icons/<file>")
-# def static_icon(request,file):
-#     print(file)
-#     with HTTPResponse(request, content_type=MIMEType.TYPE_PNG) as response:
-#         response.send_file(f"/static/images/icons/{file}")
 
 @server.route("/api/run",method = HTTPMethod.POST)
 def run_payload(request):
     
     data = json.loads(request.body.decode('utf-8'))
     payload = data.get('payload')
-    print(payload)
     if not payload:
         json_data = json.dumps({'message':'payload is missing'})
 
         with HTTPResponse(request, content_type=MIMEType.TYPE_JSON,status=HTTPStatus(400,"Bad Request")) as response:
             response.send(json_data)
     
-    
-    # picoducky
-    data = {"message": "successfully Executed"}
+    try:
+        for line in payload.split("\n"):
+            picoducky.runScript(line)
+        data = {"message": "successfully Executed"}
+        status = HTTPStatus(201, "OK")
+    except Exception as exc:
+        data = {"message": "Failed to Executed", "traceback":traceback.format_exception(exc)}
+        status=HTTPStatus(400,"Bad Request")
     json_data = json.dumps(data)
    
     
-    with HTTPResponse(request, content_type=MIMEType.TYPE_JSON) as response:
+    with HTTPResponse(request, content_type=MIMEType.TYPE_JSON,status=status) as response:
         response.send(json_data)
 # Never returns
 server.serve_forever(str(wifi.radio.ipv4_address),port)
